@@ -2,7 +2,7 @@
 	Properties{
 		_Color("Main Color", Color) = (.5,.5,.5,1)
 		_OutlineColor("Outline Color", Color) = (0,0,0,1)
-		_Outline("Outline width", Range(0.0, 0.5)) = .005
+		_Outline("Outline width", Range(0.0, 0.01)) = .005
 		_MainTex("Base (RGB)", 2D) = "white" { }
 	}
 
@@ -29,6 +29,7 @@
 
 		float3 norm = mul((float3x3)UNITY_MATRIX_IT_MV, v.normal);
 		float2 offset = TransformViewToProjection(norm.xy);
+		//TODO: need to fix this to make it less jagged when widths are higher
 
 		o.pos.xy += offset * o.pos.z * _Outline;
 		o.color = _OutlineColor;
