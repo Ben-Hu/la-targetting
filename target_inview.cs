@@ -1,8 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class target_cycler : MonoBehaviour {
+public class target_inview : MonoBehaviour {
     private List<GameObject> targetList = new List<GameObject>();
     private int currentTarget = 0;
     private Material defaultMaterial;
@@ -17,17 +17,7 @@ public class target_cycler : MonoBehaviour {
     public Material outlineMaterial;
 
     void Start () {
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, targetRadius);
-        for (int i = 0; i < hitColliders.Length; i++)
-        {   
-            if (hitColliders[i].gameObject.tag.Contains("targetable"))
-            {
-                targetList.Add(hitColliders[i].gameObject);
-                maxTargets++;
-            }
-        }
-        //http://answers.unity3d.com/questions/450583/order-objects-based-on-proximity.html
-        System.Array.Sort(hitColliders, DistanceSort);
+        //Runs before Renders actually render anything so will be empty
         //getObjects();
     }
 	
@@ -37,7 +27,8 @@ public class target_cycler : MonoBehaviour {
         if (Input.GetKey(KeyCode.R))
         {   
             if (Time.time > timeStamp + targetDelay)
-            {
+            {   
+                getObjectsInView();
                 //if updating target list every time, avoid indexing non existent unit
                 if (targetList.Count - 1 < currentTarget) {
                     return;
@@ -107,7 +98,7 @@ public class target_cycler : MonoBehaviour {
         }
     }
 
-    void getObjects()
+    void getObjectsInView()
     {
         maxTargets = 0;
         targetList.Clear(); //Should be returning a new List<> instead of using a global >.>
@@ -124,8 +115,5 @@ public class target_cycler : MonoBehaviour {
                 }
             }
         }
-    }
-    int DistanceSort (Collider a, Collider b) {
-        return (transform.position - a.transform.position).sqrMagnitude.CompareTo((transform.position - b.transform.position).sqrMagnitude);
     }
 }
