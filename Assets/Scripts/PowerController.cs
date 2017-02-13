@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class fireController : MonoBehaviour
+public class PowerController : MonoBehaviour
 {
     //Raycast Variables
     [Range(5.0f, 40f)]
     public float maxRange = 25f;
-    public Transform rayOrigin;
+    //public Transform lineOrigin;
     //public GameObject tracerEffect; - Particles
 
+    private Vector3 rayOrigin;
     private LineRenderer tracerLine;
     private Camera playerCam;
     private float nextFire;
@@ -32,16 +33,25 @@ public class fireController : MonoBehaviour
     [Range(0.05f, 1f)]
     public float minScale = 0.1f; //Shrinkage Limiter
 
+    private Vector3 spawnPosition;
+
     void Start()
     {
         //Note: script should be in a child to the player character's camera object
         playerCam = GetComponentInParent<Camera>();
         tracerLine = GetComponentInChildren<LineRenderer>();
         layerMask = (1 << LayerMask.NameToLayer("Interactable")); //Raycast bit mask by shifting index of 'Interactable' layer
+
+        spawnPosition = transform.parent.gameObject.transform.parent.transform.position;
     }
 
     void FixedUpdate()
     {
+        if (Input.GetKey(KeyCode.Escape) | transform.position.y < -100)
+        {
+            transform.parent.gameObject.transform.parent.transform.position = spawnPosition;
+        }
+
         //Clear Target if out of range -- Removing when it leaves FoV doesn't feel fun/gud
         if (currentTarget != null && (currentTarget.transform.position - transform.position).magnitude > maxRange)
         {
@@ -62,7 +72,7 @@ public class fireController : MonoBehaviour
             Vector3 rayOrigin = playerCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0.0f));
 
             //Set LineRenderer position to public origin transform
-            //tracerLine.SetPosition(0, this.rayOrigin.position); b/c Ugly
+            //tracerLine.SetPosition(0, this.lineOrigin.position); b/c Ugly
 
             //Ray registers a hit with an Interactable object
             if (Physics.Raycast(rayOrigin, playerCam.transform.forward, out hit, maxRange, layerMask) && hit.rigidbody.gameObject.tag.Contains("Interactable"))
@@ -89,7 +99,7 @@ public class fireController : MonoBehaviour
             else if (currentTarget != null)
             {
                 //Just render the line of length maxRange
-                //tracerLine.SetPosition(1, rayOrigin + (playerCam.transform.forward * maxRange)); b/c Ugly
+                //tracerLine.SetPosition(1, lineOrigin + (playerCam.transform.forward * maxRange)); b/c Ugly
                 if (Input.GetButton("Fire1"))
                 {
                     ScaleObject(currentTarget, 1 + powerScalar);
@@ -137,6 +147,7 @@ public class fireController : MonoBehaviour
     /// <param name="targetInteractable"></param>
     void ScaleObject(GameObject targetInteractable, float scaleRate)
     {
+        //TODO: Bug with achored objs if moved -- need to fix anchor to obj
         float limitedScale;
         Vector3 curScale;
         if (targetInteractable.tag.Contains("Anchored"))
@@ -185,6 +196,16 @@ public class fireController : MonoBehaviour
             limitedScale = System.Math.Max(System.Math.Min(System.Math.Max(System.Math.Max(curScale.x,curScale.y),curScale.z) * scaleRate, maxScale), minScale);
             targetInteractable.transform.localScale = new Vector3(curScale.x * scaleRate, curScale.y * scaleRate, curScale.z * scaleRate);
         }
+    }
+
+    /// <summary>
+    /// Update object mass proportionally to it's scale (?and potentially material type?)
+    /// </summary>
+    /// <param name="targetInteractable"></param>
+    /// <param name="objectMaterial"></param>
+    void updateMass(GameObject targetInteractable, string objectMaterial)
+    {
+        //TODO: updating mass on scaling
     }
 
     /// <summary>
