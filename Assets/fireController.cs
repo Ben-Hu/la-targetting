@@ -18,7 +18,7 @@ public class fireController : MonoBehaviour
     //private float hitForce = 250f; //for debugging
 
     //Targetting Variables
-    public Material outlineMaterial;
+    public Material outlineMaterial; //TODO: Write up a nicer outline shader
     private Material defaultMaterial;
     private Renderer currentRenderer;
     private GameObject currentTarget;
@@ -26,7 +26,11 @@ public class fireController : MonoBehaviour
 
     //Power-Related Variables
     [Range(0.01f, 0.1f)]
-    public float powerScalar = 0.025f; //Scaling rate
+    public float powerScalar = 0.025f; //Scaling Rate
+    [Range(10.0f, 100.0f)]
+    public float maxScale = 50.0f; //Growth Limiter
+    [Range(0.05f, 1f)]
+    public float minScale = 0.1f; //Shrinkage Limiter
 
     void Start()
     {
@@ -128,26 +132,57 @@ public class fireController : MonoBehaviour
     /// <summary>
     /// Scale the target gameObject based on given scalar rate in the dimension specified by the object tag.
     /// Scaling is a muliplication operation to create some input acceleration (smaller: more granular, larger: quicker scaling)
+    /// Anchored Interactables are children of invisible 'anchor' objects which redefine the pivot point for scaling.
     /// </summary>
     /// <param name="targetInteractable"></param>
     void ScaleObject(GameObject targetInteractable, float scaleRate)
     {
-        Vector3 curScale = targetInteractable.transform.localScale;
-        //TODO: Cap on max scale
-        //TODO: Anchored Scaling
+        float limitedScale;
+        Vector3 curScale;
+        if (targetInteractable.tag.Contains("Anchored"))
+        {
+            curScale = targetInteractable.GetComponentInParent<Transform>().parent.gameObject.transform.localScale;
+        } else
+        {
+            curScale = targetInteractable.transform.localScale;
+        }
+            
+        //TODO: there's probably bugs/some logic error in the uniform scale limiter -- look at it later
         if (targetInteractable.tag.Contains("XScalable"))
         {
-            targetInteractable.transform.localScale = new Vector3(curScale.x * scaleRate, curScale.y, curScale.z);
+            limitedScale = System.Math.Max(System.Math.Min(curScale.x * scaleRate, maxScale), minScale);
+            if (targetInteractable.tag.Contains("Anchored"))
+            {
+                targetInteractable.GetComponentInParent<Transform>().parent.gameObject.transform.localScale = new Vector3(limitedScale, curScale.y, curScale.z);
+            } else
+            {
+                targetInteractable.transform.localScale = new Vector3(limitedScale, curScale.y, curScale.z);
+            }      
         }
         else if (targetInteractable.tag.Contains("YScalable"))
         {
-            targetInteractable.transform.localScale = new Vector3(curScale.x, curScale.y * scaleRate, curScale.z);
+            limitedScale = System.Math.Max(System.Math.Min(curScale.y * scaleRate, maxScale), minScale);
+            if (targetInteractable.tag.Contains("Anchored"))
+            {
+                targetInteractable.GetComponentInParent<Transform>().parent.gameObject.transform.localScale = new Vector3(curScale.x, limitedScale, curScale.z);
+            } else
+            {
+                targetInteractable.transform.localScale = new Vector3(curScale.x, limitedScale, curScale.z);
+            }
         }
         else if (targetInteractable.tag.Contains("ZScalable"))
         {
-            targetInteractable.transform.localScale = new Vector3(curScale.x, curScale.y, curScale.z * scaleRate);
+            limitedScale = System.Math.Max(System.Math.Min(curScale.z * scaleRate, maxScale), minScale);
+            if (targetInteractable.tag.Contains("Anchored"))
+            {
+                targetInteractable.GetComponentInParent<Transform>().parent.gameObject.transform.localScale = new Vector3(curScale.x, curScale.y, limitedScale);
+            } else
+            {
+                targetInteractable.transform.localScale = new Vector3(curScale.x, curScale.y, limitedScale);
+            }
         } else
         {
+            limitedScale = System.Math.Max(System.Math.Min(System.Math.Max(System.Math.Max(curScale.x,curScale.y),curScale.z) * scaleRate, maxScale), minScale);
             targetInteractable.transform.localScale = new Vector3(curScale.x * scaleRate, curScale.y * scaleRate, curScale.z * scaleRate);
         }
     }
